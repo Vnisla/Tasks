@@ -1,108 +1,73 @@
 using System;
 using System.Collections.Generic;
-public class Heap<T>
+public class Heap<T> where T : IComparable<T>
 {
     private List<T> elements;
-    private IComparer<T> comparer;
-    private bool isMaxHeap;
-    public Heap(bool isMaxHeap = true) : this(isMaxHeap, null) { }
-    public Heap(bool isMaxHeap, IComparer<T> comparer)
+    private bool isMinHeap;
+    public Heap(bool minHeap = true)
     {
-        this.elements = new List<T>();
-        this.isMaxHeap = isMaxHeap;
-        this.comparer = comparer ?? Comparer<T>.Default;
+        elements = new List<T>();
+        isMinHeap = minHeap;
     }
-    public Heap(T[] array, bool isMaxHeap = true) : this(array, isMaxHeap, null) { }
-    public Heap(T[] array, bool isMaxHeap, IComparer<T> comparer) : this(isMaxHeap, comparer)
+    public int Count => elements.Count;
+    public bool IsEmpty => elements.Count == 0;
+    private int Parent(int index) => (index - 1) / 2;
+    private int LeftChild(int index) => 2 * index + 1;
+    private int RightChild(int index) => 2 * index + 2;
+    private bool ShouldSwap(T a, T b)
     {
-        foreach (var item in array)
-        {
-            Add(item);
-        }
-    }
-    public T Peek()
-    {
-        if (elements.Count == 0)
-            throw new InvalidOperationException("Heap is empty");
-        return elements[0];
-    }
-    public T ExtractRoot()
-    {
-        if (elements.Count == 0)
-            throw new InvalidOperationException("Heap is empty");
-        T root = elements[0];
-        elements[0] = elements[elements.Count - 1];
-        elements.RemoveAt(elements.Count - 1);
-        HeapifyDown(0);
-        return root;
+        return isMinHeap ? a.CompareTo(b) < 0 : a.CompareTo(b) > 0;
     }
     public void Add(T item)
     {
         elements.Add(item);
         HeapifyUp(elements.Count - 1);
     }
-    public void UpdateKey(int index, T newValue)
+    public T Peek()
     {
-        if (index < 0 || index >= elements.Count)
-            throw new ArgumentOutOfRangeException(nameof(index));
-        int compareResult = comparer.Compare(newValue, elements[index]);
-        elements[index] = newValue;
-        if (isMaxHeap ? compareResult > 0 : compareResult < 0)
-            HeapifyUp(index);
-        else
-            HeapifyDown(index);
+        if (IsEmpty) throw new InvalidOperationException("Heap is empty");
+        return elements[0];
     }
-    public Heap<T> Merge(Heap<T> other)
+    public T RemoveRoot()
     {
-        if (this.isMaxHeap != other.isMaxHeap)
-            throw new InvalidOperationException("Cannot merge heaps of different types");
-        var mergedHeap = new Heap<T>(this.isMaxHeap, this.comparer);
-        foreach (var item in this.elements)
-        {
-            mergedHeap.Add(item);
-        }
-        foreach (var item in other.elements)
-        {
-            mergedHeap.Add(item);
-        }
-        return mergedHeap;
+        if (IsEmpty) throw new InvalidOperationException("Heap is empty");
+        T root = elements[0];
+        elements[0] = elements[Count - 1];
+        elements.RemoveAt(Count - 1);
+        HeapifyDown(0);
+        return root;
     }
-    public int Count => elements.Count;
-    public bool IsEmpty => elements.Count == 0;
-    public List<T> GetElements() => new List<T>(elements);
     private void HeapifyUp(int index)
     {
         while (index > 0)
         {
-            int parent = (index - 1) / 2;
-            if (ShouldSwap(parent, index))
-                break;
-            Swap(index, parent);
-            index = parent;
+            int parent = Parent(index);
+            if (ShouldSwap(elements[index], elements[parent]))
+            {
+                Swap(index, parent);
+                index = parent;
+            }
+            else break;
         }
     }
     private void HeapifyDown(int index)
     {
-        int lastIndex = elements.Count - 1;
-        while (true)
+        while (index < Count)
         {
-            int left = 2 * index + 1;
-            int right = 2 * index + 2;
-            int target = index;
-            if (left <= lastIndex && ShouldSwap(target, left))
-                target = left;
-            if (right <= lastIndex && ShouldSwap(target, right))
-                target = right;
-            if (target == index)
-                break;
-            Swap(index, target);
-            index = target;
+            int left = LeftChild(index);
+            int right = RightChild(index);
+            int extreme = index;
+            if (left < Count && ShouldSwap(elements[left], elements[extreme]))
+                extreme = left;
+            if (right < Count && ShouldSwap(elements[right], elements[extreme]))
+                extreme = right;
+            if (extreme != index)
+            {
+                Swap(index, extreme);
+                index = extreme;
+            }
+            else break;
         }
-    }
-    private bool ShouldSwap(int parent, int child)
-    {
-        int compareResult = comparer.Compare(elements[parent], elements[child]);
-        return isMaxHeap ? compareResult >= 0 : compareResult <= 0;
     }
     private void Swap(int i, int j)
     {
@@ -110,117 +75,85 @@ public class Heap<T>
         elements[i] = elements[j];
         elements[j] = temp;
     }
+    public bool Contains(T item) => elements.Contains(item);
+    public List<T> CopyElements()
+    {
+        return new List<T>(elements);
+    }
 }
-// Задача 6
-public class MyPriorityQueue<T>
+// zadacha 6
+public class MyPriorityQueue<T> where T : IComparable<T>
 {
     private Heap<T> heap;
-    private List<T> elements; 
-    public MyPriorityQueue() : this(Comparer<T>.Default) { }
-    public MyPriorityQueue(T[] a) : this(Comparer<T>.Default)
+    private int capacity;
+    private int count;
+    public MyPriorityQueue() : this(11) { }
+    public MyPriorityQueue(int initialCapacity)
     {
-        AddAll(a);
+        if (initialCapacity <= 0)
+            throw new ArgumentException("Capacity must be positive");
+        capacity = initialCapacity;
+        count = 0;
+        heap = new Heap<T>(true);
     }
-    public MyPriorityQueue(int initialCapacity) : this(Comparer<T>.Default) { }
-    public MyPriorityQueue(int initialCapacity, IComparer<T> comparator) : this(comparator) { }
-    public MyPriorityQueue(IComparer<T> comparator)
+    public MyPriorityQueue(T[] array)
     {
-        this.heap = new Heap<T>(true, comparator);
-        this.elements = new List<T>();
+        if (array == null)
+            throw new ArgumentNullException(nameof(array));
+        capacity = Math.Max(array.Length * 2, 11);
+        heap = new Heap<T>(true);
+        foreach (var item in array)
+            Add(item);
     }
     public MyPriorityQueue(MyPriorityQueue<T> other)
     {
-        this.heap = new Heap<T>(true, GetComparerFromHeap(other.heap));
-        this.elements = new List<T>(other.elements);
+        if (other == null)
+            throw new ArgumentNullException(nameof(other));
+        capacity = other.capacity;
+        count = other.count;
+        heap = new Heap<T>(true);
+        var elements = other.heap.CopyElements();
+        foreach (var item in elements)
+            heap.Add(item);
     }
-    private IComparer<T> GetComparerFromHeap(Heap<T> heapRef)
+    public int Count => count;
+    public bool IsEmpty => count == 0;
+    public void Add(T element)
     {
-        return Comparer<T>.Default;
+        EnsureCapacity();
+        heap.Add(element);
+        count++;
     }
-    public void Add(T e)
+    public void AddAll(T[] array)
     {
-        heap.Add(e);
-        elements.Add(e);
-    }
-    public void AddAll(T[] a)
-    {
-        foreach (var item in a)
-        {
+        if (array == null)
+            throw new ArgumentNullException(nameof(array));
+        foreach (var item in array)
             Add(item);
-        }
     }
     public void Clear()
     {
-        heap = new Heap<T>(true, GetComparerFromHeap(heap));
-        elements.Clear();
+        heap = new Heap<T>(true);
+        count = 0;
     }
-    public bool Contains(object o)
+    public bool Contains(object obj)
     {
-        if (o is T item)
-        {
-            return elements.Contains(item);
-        }
+        if (obj is T item)
+            return heap.Contains(item);
         return false;
     }
-    public bool ContainsAll(T[] a)
+    public bool ContainsAll(T[] array)
     {
-        foreach (var item in a)
-        {
+        if (array == null)
+            throw new ArgumentNullException(nameof(array));
+        foreach (var item in array)
             if (!Contains(item))
                 return false;
-        }
         return true;
-    }
-    public bool IsEmpty()
-    {
-        return heap.IsEmpty;
-    }
-    public bool Remove(object o)
-    {
-        if (o is T item && elements.Remove(item))
-        {
-            RebuildHeapFromElements();
-            return true;
-        }
-        return false;
-    }
-    public void RemoveAll(T[] a)
-    {
-        bool removed = false;
-        foreach (var item in a)
-        {
-            if (elements.Remove(item))
-                removed = true;
-        }
-        if (removed)
-            RebuildHeapFromElements();
-    }
-    public void RetainAll(T[] a)
-    {
-        var toRetain = new HashSet<T>(a);
-        elements.RemoveAll(item => !toRetain.Contains(item));
-        RebuildHeapFromElements();
-    }
-    public int Size()
-    {
-        return elements.Count;
-    }
-    public T[] ToArray()
-    {
-        return elements.ToArray();
-    }
-    public T[] ToArray(T[] a)
-    {
-        if (a == null || a.Length < elements.Count)
-            return ToArray();
-        elements.CopyTo(a, 0);
-        if (a.Length > elements.Count)
-            a[elements.Count] = default(T);
-        return a;
     }
     public T Element()
     {
-        if (heap.IsEmpty)
+        if (IsEmpty)
             throw new InvalidOperationException("Queue is empty");
         return heap.Peek();
     }
@@ -238,34 +171,98 @@ public class MyPriorityQueue<T>
     }
     public T Peek()
     {
-        if (heap.IsEmpty)
+        if (IsEmpty)
             return default(T);
         return heap.Peek();
     }
     public T Poll()
     {
-        if (heap.IsEmpty)
+        if (IsEmpty)
             return default(T);
-        T item = heap.ExtractRoot();
-        elements.Remove(item);
-        return item;
+        count--;
+        return heap.RemoveRoot();
     }
-    private void RebuildHeapFromElements()
+    public bool Remove(object obj)
     {
-        var newHeap = new Heap<T>(true, GetComparerFromHeap(heap));
-        foreach (var item in elements)
+        if (!(obj is T item))
+            return false;
+        Heap<T> newHeap = new Heap<T>(true);
+        bool found = false;
+        var elements = heap.CopyElements();
+        foreach (var current in elements)
         {
-            newHeap.Add(item);
+            if (!found && current.Equals(item))
+            {
+                found = true;
+                count--;
+            }
+            else
+            {
+                newHeap.Add(current);
+            }
+        }
+        heap = newHeap;
+        return found;
+    }
+    public void RemoveAll(T[] array)
+    {
+        if (array == null)
+            throw new ArgumentNullException(nameof(array));
+        foreach (var item in array)
+            Remove(item);
+    }
+    public void RetainAll(T[] array)
+    {
+        if (array == null)
+            throw new ArgumentNullException(nameof(array));
+        var retainSet = new HashSet<T>(array);
+        Heap<T> newHeap = new Heap<T>(true);
+        var elements = heap.CopyElements();
+        foreach (var current in elements)
+        {
+            if (retainSet.Contains(current))
+            {
+                newHeap.Add(current);
+            }
+            else
+            {
+                count--;
+            }
         }
         heap = newHeap;
     }
-    public void PrintHeapStructure()
+    public int Size() => count;
+    public T[] ToArray()
     {
-        Console.WriteLine("Структура кучи:");
-        var heapElements = heap.GetElements();
-        for (int i = 0; i < heapElements.Count; i++)
+        var tempHeap = new Heap<T>(true);
+        var elements = heap.CopyElements();
+        foreach (var item in elements)
+            tempHeap.Add(item);
+        var result = new List<T>();
+        while (!tempHeap.IsEmpty)
+            result.Add(tempHeap.RemoveRoot());
+        return result.ToArray();
+    }
+    public T[] ToArray(T[] array)
+    {
+        T[] result = ToArray();
+        if (array == null)
+            return result;
+        if (array.Length < result.Length)
+            return result;
+        Array.Copy(result, array, result.Length);
+        for (int i = result.Length; i < array.Length; i++)
+            array[i] = default(T);
+        return array;
+    }
+    private void EnsureCapacity()
+    {
+        if (count >= capacity)
         {
-            Console.WriteLine($"  [{i}]: {heapElements[i]}");
+            if (capacity < 64)
+                capacity += 2;
+            else
+                capacity = (int)(capacity * 1.5);
         }
     }
 }
@@ -273,98 +270,32 @@ class Program
 {
     static void Main()
     {
-        Console.WriteLine("MyPriorityQueue");
-        Console.WriteLine("Доступные команды:");
-        Console.WriteLine("  add <число> - добавить элемент");
-        Console.WriteLine("  poll - извлечь элемент с высшим приоритетом");
-        Console.WriteLine("  peek - посмотреть элемент с высшим приоритетом");
-        Console.WriteLine("  size - показать размер очереди");
-        Console.WriteLine("  show - показать все элементы");
-        Console.WriteLine("  structure - показать структуру кучи");
-        Console.WriteLine("  clear - очистить очередь");
-        Console.WriteLine("  exit - выход");
-        Console.WriteLine();
-        var pq = new MyPriorityQueue<int>();
-        while (true)
+        Console.WriteLine(" ОЧЕРЕДЬ С ПРИОРИТЕТАМИ");
+        Console.WriteLine("\n Тест 1: Базa");
+        MyPriorityQueue<int> queue = new MyPriorityQueue<int>();
+        int[] elements = { 5, 3, 8, 1, 10, 2 };
+        Console.WriteLine("Добавляем элементы: " + string.Join(", ", elements));
+        queue.AddAll(elements);
+        Console.WriteLine($"Размер: {queue.Size()}");
+        Console.WriteLine($"Peek: {queue.Peek()}");
+        Console.WriteLine("Содержимое в порядке приоритета: " + string.Join(" ", queue.ToArray()));
+        Console.WriteLine("\n Тест 2: Извлечение элементов ");
+        while (!queue.IsEmpty)
         {
-            Console.Write("Введите команду: ");
-            string input = Console.ReadLine();
-            if (string.IsNullOrWhiteSpace(input))
-                continue;
-            string[] parts = input.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            string command = parts[0].ToLower();
-            try
-            {
-                switch (command)
-                {
-                    case "add":
-                        if (parts.Length > 1 && int.TryParse(parts[1], out int num))
-                        {
-                            pq.Add(num);
-                            Console.WriteLine($"Добавлен элемент: {num}");
-                        }
-                        break;
-
-                    case "poll":
-                        if (!pq.IsEmpty())
-                        {
-                            int max = pq.Poll();
-                            Console.WriteLine($"Извлечен элемент с высшим приоритетом: {max}");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Очередь пуста");
-                        }
-                        break;
-
-                    case "peek":
-                        if (!pq.IsEmpty())
-                        {
-                            int max = pq.Peek();
-                            Console.WriteLine($"Элемент с высшим приоритетом: {max}");
-                        }
-                        else
-                        {
-                            Console.WriteLine("Очередь пуста");
-                        }
-                        break;
-
-                    case "size":
-                        Console.WriteLine($"Размер очереди: {pq.Size()}");
-                        break;
-
-                    case "show":
-                        if (!pq.IsEmpty())
-                        {
-                            var arr = pq.ToArray();
-                            Console.WriteLine("Все элементы: " + string.Join(", ", arr));
-                        }
-                        else
-                        {
-                            Console.WriteLine("Очередь пуста");
-                        }
-                        break;
-
-                    case "structure":
-                        pq.PrintHeapStructure();
-                        break;
-                    case "clear":
-                        pq.Clear();
-                        Console.WriteLine("Очередь очищена");
-                        break;
-                    case "exit":
-                        Console.WriteLine("Выход из программы");
-                        return;
-                    default:
-                        Console.WriteLine("Неизвестная команда");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Ошибка: {ex.Message}");
-            }
-            Console.WriteLine();
+            Console.WriteLine($"Poll: {queue.Poll()}, Осталось: {queue.Size()}");
         }
+        Console.WriteLine("\n Тест 3: Операции toarray & contains");
+        queue.AddAll(new int[] { 1, 2, 3, 4, 5 });
+        Console.WriteLine("Содержимое: " + string.Join(" ", queue.ToArray()));
+        Console.WriteLine($"Contains 3: {queue.Contains(3)}");
+        Console.WriteLine($"Contains 10: {queue.Contains(10)}");
+        queue.Remove(3);
+        Console.WriteLine("После удаления 3: " + string.Join(" ", queue.ToArray()));
+        Console.WriteLine("\n Тест 4: RetainAll");
+        queue.RetainAll(new int[] { 1, 5 });
+        Console.WriteLine("После RetainAll [1, 5]: " + string.Join(" ", queue.ToArray()));
+        Console.WriteLine("\n Тест 5: Копирование ");
+        MyPriorityQueue<int> copy = new MyPriorityQueue<int>(queue);
+        Console.WriteLine("Копия: " + string.Join(" ", copy.ToArray()));
     }
 }
