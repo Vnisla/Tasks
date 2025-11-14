@@ -447,4 +447,5 @@ class Program
         File.WriteAllLines("input.txt", testContent);
         Console.WriteLine("Создан тестовый файл input.txt");
     }
+
 }
