@@ -414,4 +414,5 @@ public class Program
         vector.Clear();
         Console.WriteLine($"После Clear: Count={vector.Count}, IsEmpty={vector.IsEmpty()}");
     }
+
 }
