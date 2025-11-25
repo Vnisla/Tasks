@@ -1,6 +1,3 @@
-  Код с вводом с консоли и обработкой переменных
-
-```csharp
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -461,3 +458,4 @@ public List<string> ExtractVariables(string expression)
     }
     return variablesList;
 }
+
