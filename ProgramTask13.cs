@@ -1,165 +1,41 @@
-﻿using System;
+  Код с вводом с консоли и обработкой переменных
+
+```csharp
+using System;
 using System.Collections.Generic;
 using System.Globalization;
-public class MyVector<T>
-{
-    protected T[] elementData;
-    protected int elementCount;
-    protected int capacityIncrement;
-    public MyVector(int initialCapacity = 10, int capacityIncrement = 0)
-    {
-        if (initialCapacity < 0)
-            throw new ArgumentException("Начальная емкость не может быть отрицательной");
-        this.elementData = new T[initialCapacity];
-        this.elementCount = 0;
-        this.capacityIncrement = capacityIncrement;
-    }
-    public MyVector(T[] a) : this(a.Length)
-    {
-        Array.Copy(a, elementData, a.Length);
-        elementCount = a.Length;
-    }
-    public virtual void Add(T e)
-    {
-        EnsureCapacity(elementCount + 1);
-        elementData[elementCount++] = e;
-    }
-    protected void EnsureCapacity(int minCapacity)
-    {
-        if (minCapacity > elementData.Length)
-        {
-            int newCapacity;
-            if (capacityIncrement > 0)
-                newCapacity = elementData.Length + capacityIncrement;
-            else
-                newCapacity = elementData.Length * 2;
-            if (newCapacity < minCapacity)
-                newCapacity = minCapacity;
-            T[] newArray = new T[newCapacity];
-            Array.Copy(elementData, newArray, elementCount);
-            elementData = newArray;
-        }
-    }
-    public virtual T Get(int index)
-    {
-        if (index < 0 || index >= elementCount)
-            throw new IndexOutOfRangeException("Индекс вне диапазона");
-        return elementData[index];
-    }
-    public virtual T Set(int index, T element)
-    {
-        if (index < 0 || index >= elementCount)
-            throw new IndexOutOfRangeException("Индекс вне диапазона");
-        T oldValue = elementData[index];
-        elementData[index] = element;
-        return oldValue;
-    }
-    public virtual int Size()
-    {
-        return elementCount;
-    }
-    public virtual bool IsEmpty()
-    {
-        return elementCount == 0;
-    }
-    public virtual T Remove(int index)
-    {
-        if (index < 0 || index >= elementCount)
-            throw new IndexOutOfRangeException("Индекс вне диапазона");
-        T oldValue = elementData[index];
-        int numMoved = elementCount - index - 1;
-        if (numMoved > 0)
-            Array.Copy(elementData, index + 1, elementData, index, numMoved);
-        elementData[--elementCount] = default(T);
-        return oldValue;
-    }
-    public virtual void Add(int index, T element)
-    {
-        if (index < 0 || index > elementCount)
-            throw new IndexOutOfRangeException("Индекс вне диапазона");
-        EnsureCapacity(elementCount + 1);
-        Array.Copy(elementData, index, elementData, index + 1, elementCount - index);
-        elementData[index] = element;
-        elementCount++;
-    }
-    public virtual T FirstElement()
-    {
-        if (IsEmpty())
-            throw new InvalidOperationException("Вектор пуст");
 
-        return elementData[0];
-    }
-    public virtual T LastElement()
-    {
-        if (IsEmpty())
-            throw new InvalidOperationException("Вектор пуст");
-
-        return elementData[elementCount - 1];
-    }
-    public virtual void RemoveElementAt(int pos)
-    {
-        Remove(pos);
-    }
-}
-public class MyStack<T> : MyVector<T>
-{
-    public MyStack() : base() { }
-    public MyStack(int initialCapacity) : base(initialCapacity) { }
-    public MyStack(T[] a) : base(a) { }
-    public void Push(T item)
-    {
-        Add(item);
-    }
-    public T Pop()
-    {
-        if (IsEmpty())
-            throw new InvalidOperationException("Стек пуст");
-        return Remove(elementCount - 1);
-    }
-    public T Peek()
-    {
-        if (IsEmpty())
-            throw new InvalidOperationException("Стек пуст");
-        return LastElement();
-    }
-    public bool Empty()
-    {
-        return IsEmpty();
-    }
-    public int Search(T item)
-    {
-        for (int i = elementCount - 1, depth = 1; i >= 0; i--, depth++)
-        {
-            if (EqualityComparer<T>.Default.Equals(elementData[i], item))
-                return depth;
-        }
-        return -1;
-    }
-}
 public class ReversePolishNotation
 {
     private MyStack<double> numberStack;
     private MyStack<string> operatorStack;
     private Dictionary<string, double> variables;
+
     public ReversePolishNotation()
     {
         numberStack = new MyStack<double>();
         operatorStack = new MyStack<string>();
         variables = new Dictionary<string, double>();
     }
+
     public double Evaluate(string expression, Dictionary<string, double> vars = null)
     {
         if (vars != null)
             variables = vars;
 
         string rpn = ConvertToRPN(expression);
+        Console.WriteLine($"RPN: {rpn}");
+        
         return EvaluateRPN(rpn);
     }
+
     private string ConvertToRPN(string expression)
     {
         operatorStack = new MyStack<string>();
         List<string> output = new List<string>();
+        
         string[] tokens = Tokenize(expression);
+        
         foreach (string token in tokens)
         {
             if (IsNumber(token))
@@ -186,7 +62,7 @@ public class ReversePolishNotation
                 }
                 if (!operatorStack.Empty() && operatorStack.Peek() == "(")
                     operatorStack.Pop();
-
+                    
                 if (!operatorStack.Empty() && IsFunction(operatorStack.Peek()))
                 {
                     output.Add(operatorStack.Pop());
@@ -194,23 +70,29 @@ public class ReversePolishNotation
             }
             else if (IsOperator(token))
             {
-                while (!operatorStack.Empty() && GetPriority(operatorStack.Peek()) >= GetPriority(token))
+                while (!operatorStack.Empty() && 
+                       operatorStack.Peek() != "(" &&
+                       GetPriority(operatorStack.Peek()) >= GetPriority(token))
                 {
                     output.Add(operatorStack.Pop());
                 }
                 operatorStack.Push(token);
             }
         }
+        
         while (!operatorStack.Empty())
         {
             output.Add(operatorStack.Pop());
         }
+        
         return string.Join(" ", output);
     }
+
     private double EvaluateRPN(string rpnExpression)
     {
         numberStack = new MyStack<double>();
         string[] tokens = rpnExpression.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        
         foreach (string token in tokens)
         {
             if (IsNumber(token))
@@ -229,10 +111,13 @@ public class ReversePolishNotation
                 ExecuteOperation(token);
             }
         }
+        
         if (numberStack.Size() != 1)
             throw new InvalidOperationException("Некорректное выражение");
+            
         return numberStack.Pop();
     }
+
     private void ExecuteOperation(string operation)
     {
         switch (operation)
@@ -356,13 +241,16 @@ public class ReversePolishNotation
                 throw new ArgumentException($"Неизвестная операция: {operation}");
         }
     }
+
     private string[] Tokenize(string expression)
     {
         List<string> tokens = new List<string>();
         string current = "";
+        
         for (int i = 0; i < expression.Length; i++)
         {
             char c = expression[i];
+            
             if (char.IsWhiteSpace(c))
             {
                 if (!string.IsNullOrEmpty(current))
@@ -372,6 +260,7 @@ public class ReversePolishNotation
                 }
                 continue;
             }
+            
             if (char.IsDigit(c) || c == '.')
             {
                 current += c;
@@ -390,32 +279,40 @@ public class ReversePolishNotation
                 tokens.Add(c.ToString());
             }
         }
+        
         if (!string.IsNullOrEmpty(current))
             tokens.Add(current);
+            
         return tokens.ToArray();
     }
+
     private bool IsNumber(string token)
     {
         return double.TryParse(token, NumberStyles.Any, CultureInfo.InvariantCulture, out _);
     }
+
     private bool IsVariable(string token)
     {
         return !IsFunction(token) && char.IsLetter(token[0]);
     }
+
     private bool IsFunction(string token)
     {
         string[] functions = { "sqrt", "sin", "cos", "tan", "ln", "log", "exp", "abs", "floor", "min", "max" };
         return Array.Exists(functions, f => f == token);
     }
+
     private bool IsOperator(string token)
     {
         string[] operators = { "+", "-", "*", "/", "^", "%" };
         return Array.Exists(operators, op => op == token);
     }
+
     private bool IsOperatorChar(char c)
     {
         return c == '+' || c == '-' || c == '*' || c == '/' || c == '^' || c == '%';
     }
+
     private int GetPriority(string op)
     {
         switch (op)
@@ -429,47 +326,138 @@ public class ReversePolishNotation
                 return 2;
             case "^":
                 return 3;
-            case "sqrt":
-            case "sin":
-            case "cos":
-            case "tan":
-            case "ln":
-            case "log":
-            case "exp":
-            case "abs":
-            case "floor":
+            case "sqrt": case "sin": case "cos": case "tan":
+            case "ln": case "log": case "exp": case "abs": case "floor":
+            case "min": case "max":
                 return 4;
             default:
                 return 0;
         }
     }
+
+    // Метод для извлечения переменных из выражения
+    public List<string> ExtractVariables(string expression)
+    {
+        List<string> variablesList = new List<string>();
+        string[] tokens = Tokenize(expression);
+        
+        foreach (string token in tokens)
+        {
+            if (IsVariable(token) && !variablesList.Contains(token))
+            {
+                variablesList.Add(token);
+            }
+        }
+        
+        return variablesList;
+    }
 }
+
+// Класс MyStack (упрощенная версия)
+public class MyStack<T>
+{
+    private List<T> items = new List<T>();
+    
+    public void Push(T item) => items.Add(item);
+    
+    public T Pop()
+    {
+        if (items.Count == 0) throw new InvalidOperationException("Стек пуст");
+        T item = items[items.Count - 1];
+        items.RemoveAt(items.Count - 1);
+        return item;
+    }
+    
+    public T Peek()
+    {
+        if (items.Count == 0) throw new InvalidOperationException("Стек пуст");
+        return items[items.Count - 1];
+    }
+    
+    public bool Empty() => items.Count == 0;
+    
+    public int Size() => items.Count;
+}
+
+// Главная программа с консольным вводом
 class Program
 {
     static void Main()
     {
         ReversePolishNotation rpn = new ReversePolishNotation();
-        try
+        
+        Console.WriteLine("=== Калькулятор обратной польской записи ===");
+        Console.WriteLine("Поддерживаемые операции: +, -, *, /, ^, %, sqrt, sin, cos, tan, ln, log, exp, abs, floor, min, max");
+        Console.WriteLine("Для выхода введите 'exit'");
+        Console.WriteLine();
+        
+        while (true)
         {
-            string expr1 = "3 + 4 * 2 / (1 - 5) ^ 2";
-            double result1 = rpn.Evaluate(expr1);
-            Console.WriteLine($"{expr1} = {result1}");
-            var variables = new Dictionary<string, double>
+            try
             {
-                { "a", 5 },
-                { "b", 10 },
-                { "c", 3 }
-            };
-            string expr2 = "a + b * c - sqrt(9)";
-            double result2 = rpn.Evaluate(expr2, variables);
-            Console.WriteLine($"{expr2} = {result2}");
-            string expr3 = "sin(0) + cos(0)";
-            double result3 = rpn.Evaluate(expr3);
-            Console.WriteLine($"{expr3} = {result3}");
+                // Ввод выражения
+                Console.Write("Введите математическое выражение: ");
+                string expression = Console.ReadLine();
+                
+                if (expression.ToLower() == "exit")
+                    break;
+                    
+                if (string.IsNullOrWhiteSpace(expression))
+                    continue;
+                
+                // Извлечение переменных из выражения
+                List<string> variablesInExpression = rpn.ExtractVariables(expression);
+                
+                Dictionary<string, double> variables = new Dictionary<string, double>();
+                
+                // Ввод значений переменных
+                if (variablesInExpression.Count > 0)
+                {
+                    Console.WriteLine($"Найдены переменные: {string.Join(", ", variablesInExpression)}");
+                    Console.WriteLine("Введите значения переменных:");
+                    
+                    foreach (string varName in variablesInExpression)
+                    {
+                        Console.Write($"{varName} = ");
+                        string input = Console.ReadLine();
+                        
+                        if (double.TryParse(input, NumberStyles.Any, CultureInfo.InvariantCulture, out double value))
+                        {
+                            variables[varName] = value;
+                        }
+                        else
+                        {
+                            throw new ArgumentException($"Некорректное значение для переменной {varName}");
+                        }
+                    }
+                    Console.WriteLine();
+                }
+                
+                // Вычисление выражения
+                double result = rpn.Evaluate(expression, variables);
+                Console.WriteLine($"Результат: {result}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка: {ex.Message}");
+            }
+            
+            Console.WriteLine(new string('-', 50));
         }
-        catch (Exception ex)
+        
+        Console.WriteLine("Программа завершена.");
+    }
+}
+public List<string> ExtractVariables(string expression)
+{
+    List<string> variablesList = new List<string>();
+    string[] tokens = Tokenize(expression);
+    foreach (string token in tokens)
+    {
+        if (IsVariable(token) && !variablesList.Contains(token))
         {
-            Console.WriteLine($"Ошибка: {ex.Message}");
+            variablesList.Add(token);
         }
     }
+    return variablesList;
 }
